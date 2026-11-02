@@ -23,7 +23,7 @@ const badgeVariants = cva(
 				outline:
 					"fui:border-border fui:bg-background fui:text-foreground fui:[a]:hover:bg-tertiary fui:[a]:hover:text-muted-foreground",
 				ghost: "fui:hover:bg-tertiary fui:dark:hover:bg-tertiary/50",
-				link: "fui:text-link fui:underline-offset-4 fui:hover:underline",
+				link: "fui:text-link fui:underline-offset-4 fui:hover:underline fui:underline-links:underline",
 			},
 		},
 		defaultVariants: {

@@ -52,6 +52,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "../components/alert-dialog";
+import { AppHeader } from "../components/app-shell";
 import { Avatar, AvatarFallback } from "../components/avatar";
 import { Badge } from "../components/badge";
 import {
@@ -141,6 +142,7 @@ import {
 	ItemTitle,
 } from "../components/item";
 import { Kbd, KbdGroup } from "../components/kbd";
+import { PageHeader } from "../components/page-header";
 import { Progress } from "../components/progress";
 import { ScrollArea } from "../components/scroll-area";
 import {
@@ -152,11 +154,7 @@ import {
 	SelectValue,
 } from "../components/select";
 import { Separator } from "../components/separator";
-import {
-	SidebarInset,
-	SidebarProvider,
-	SidebarTrigger,
-} from "../components/sidebar";
+import { SidebarInset, SidebarProvider } from "../components/sidebar";
 import { Skeleton } from "../components/skeleton";
 import { Toaster } from "../components/sonner";
 import { Switch } from "../components/switch";
@@ -430,13 +428,7 @@ const stats = [
 
 function DashboardHeader({ onOpenCommand }: { onOpenCommand: () => void }) {
 	return (
-		<header className="fui:sticky fui:top-0 fui:z-10 fui:flex fui:h-16 fui:shrink-0 fui:items-center fui:gap-2 fui:border-b fui:bg-background/80 fui:px-4 fui:backdrop-blur">
-			<SidebarTrigger className="fui:-ml-1" />
-			<Separator
-				orientation="vertical"
-				className="fui:mr-2 fui:h-4 fui:self-center!"
-			/>
-
+		<AppHeader>
 			<Breadcrumb className="fui:hidden fui:md:block">
 				<BreadcrumbList>
 					<BreadcrumbItem>
@@ -523,7 +515,7 @@ function DashboardHeader({ onOpenCommand }: { onOpenCommand: () => void }) {
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
-		</header>
+		</AppHeader>
 	);
 }
 
@@ -659,7 +651,8 @@ function RevenueChartCard() {
 			<CardContent>
 				<ChartContainer
 					config={revenueChartConfig}
-					className="fui:aspect-auto fui:h-[260px] fui:w-full"
+					aspect="auto"
+					className="fui:h-[260px] fui:w-full"
 				>
 					<AreaChart data={revenueByMonth} margin={{ left: 4, right: 4 }}>
 						<defs>
@@ -1050,7 +1043,8 @@ function AnalyticsTab() {
 				<CardContent>
 					<ChartContainer
 						config={trafficChartConfig}
-						className="fui:aspect-auto fui:h-[240px] fui:w-full"
+						aspect="auto"
+						className="fui:h-[240px] fui:w-full"
 					>
 						<BarChart data={trafficBySource} margin={{ left: 4, right: 4 }}>
 							<CartesianGrid vertical={false} />
@@ -1363,32 +1357,29 @@ function Dashboard({ sidebarOpen = true, loading = false }: DashboardProps) {
 					<DashboardHeader onOpenCommand={() => setCommandOpen(true)} />
 
 					<div className="fui:flex fui:flex-1 fui:flex-col fui:gap-4 fui:p-4 fui:md:p-6">
-						<div className="fui:flex fui:flex-wrap fui:items-center fui:justify-between fui:gap-3">
-							<div className="fui:flex fui:flex-col fui:gap-1">
-								<h1 className="fui:font-heading fui:text-xl fui:font-medium">
-									Good afternoon, Maxi
-								</h1>
-								<p className="fui:text-sm fui:text-muted-foreground">
-									Here is what happened in the manor toolbox today.
-								</p>
-							</div>
-							<div className="fui:flex fui:items-center fui:gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() =>
-										toast("Report scheduled", {
-											description: "You will get it by email in a few minutes.",
-											action: { label: "Undo", onClick: () => undefined },
-										})
-									}
-								>
-									<PaperPlaneTiltIcon data-icon="inline-start" />
-									Email report
-								</Button>
-								<InviteDialog />
-							</div>
-						</div>
+						<PageHeader
+							title="Good afternoon, Maxi"
+							description="Here is what happened in the manor toolbox today."
+							actions={
+								<>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() =>
+											toast("Report scheduled", {
+												description:
+													"You will get it by email in a few minutes.",
+												action: { label: "Undo", onClick: () => undefined },
+											})
+										}
+									>
+										<PaperPlaneTiltIcon data-icon="inline-start" />
+										Email report
+									</Button>
+									<InviteDialog />
+								</>
+							}
+						/>
 
 						<Alert>
 							<SparkleIcon />

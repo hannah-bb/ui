@@ -17,6 +17,7 @@ import {
 	PaginationNext,
 	PaginationPager,
 	PaginationPrevious,
+	paginationItems,
 } from "../components/pagination";
 
 const promotions = Array.from({ length: 34 }, (_, index) => ({
@@ -31,29 +32,7 @@ const promotions = Array.from({ length: 34 }, (_, index) => ({
 	active: index % 3 !== 2,
 }));
 
-/**
- * The pages to show: always the first and last, the current one with a
- * neighbour on each side, and an ellipsis for each gap. Short lists show
- * every page.
- */
-function pageItems(
-	current: number,
-	total: number,
-): (number | "gap-start" | "gap-end")[] {
-	if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-
-	const middle = [current - 1, current, current + 1].filter(
-		(page) => page > 1 && page < total,
-	);
-	const items: (number | "gap-start" | "gap-end")[] = [1];
-	if (middle[0] > 2) items.push("gap-start");
-	items.push(...middle);
-	if (middle[middle.length - 1] < total - 1) items.push("gap-end");
-	items.push(total);
-	return items;
-}
-
-function Pager({
+function NumberedPager({
 	page,
 	total,
 	onPageChange,
@@ -81,7 +60,7 @@ function Pager({
 						className={atStart ? "fui:pointer-events-none fui:opacity-50" : ""}
 					/>
 				</PaginationItem>
-				{pageItems(page, total).map((item) =>
+				{paginationItems(page, total).map((item) =>
 					typeof item === "string" ? (
 						<PaginationItem key={item}>
 							<PaginationEllipsis />
@@ -115,14 +94,14 @@ const pageSizeOptions = [3, 6, 12, 24];
 
 /**
  * A list of cards, for content that is not a table, with one of the two
- * pagers below: numbered pages, or the compact pager the Data Table uses,
- * which can also change the page size.
+ * pagers below: numbered page links, or the pager the Data Table uses, which
+ * can also change the page size.
  */
 function PaginatedCards({
 	pager = "numbered",
 	pageSize: initialPageSize = 6,
 }: {
-	pager?: "numbered" | "compact";
+	pager?: "numbered" | "pager";
 	pageSize?: number;
 }) {
 	const [page, setPage] = React.useState(1);
@@ -154,7 +133,7 @@ function PaginatedCards({
 				))}
 			</div>
 			{pager === "numbered" ? (
-				<Pager page={current} total={total} onPageChange={setPage} />
+				<NumberedPager page={current} total={total} onPageChange={setPage} />
 			) : (
 				<PaginationPager
 					page={current}
@@ -167,7 +146,6 @@ function PaginatedCards({
 						setPage(1);
 					}}
 					pageSizeLabel="Cards per page"
-					summary={`${promotions.length} promotions`}
 				/>
 			)}
 		</div>
@@ -182,7 +160,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					'Two ways to page through a list. Numbered pages suit a short run of pages: compose `PaginationPrevious`, `PaginationLink` (with `isActive` on the current page), `PaginationEllipsis` for skipped pages and `PaginationNext`; the links are anchors, so each page can have its own URL. `PaginationPager` is the compact alternative the Data Table uses: "Page 3 of 12" with first, previous, next and last buttons, an optional page-size select (`onPageSizeChange`, `pageSizeLabel`) and a `summary` on the left.',
+					"Two ways to page through a list. Numbered pages suit a short run of pages: compose `PaginationPrevious`, `PaginationLink` (with `isActive` on the current page), `PaginationEllipsis` for skipped pages and `PaginationNext`; the links are anchors, so each page can have its own URL. `PaginationPager` is what the Data Table uses: the same Previous, page numbers and Next, rendered as buttons and driven by state, with an optional page-size select (`onPageSizeChange`, `pageSizeLabel`) on the left.",
 			},
 		},
 	},
@@ -190,7 +168,7 @@ const meta = {
 	argTypes: {
 		pager: {
 			control: "inline-radio",
-			options: ["numbered", "compact"],
+			options: ["numbered", "pager"],
 		},
 		pageSize: {
 			control: "select",
@@ -208,6 +186,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const Compact: Story = {
-	args: { pager: "compact" },
+export const Pager: Story = {
+	args: { pager: "pager" },
 };

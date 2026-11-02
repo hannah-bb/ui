@@ -24,6 +24,10 @@ export default defineConfig({
 					src: "src/themes/*.css",
 					dest: "themes",
 				},
+				{
+					src: "src/theme.css",
+					dest: ".",
+				},
 			],
 		}),
 	],

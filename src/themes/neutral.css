@@ -4,7 +4,7 @@
  * color tokens since replaced by a warm-neutral palette.
  *
  * Published as `@foomo/ui/themes/neutral.css`. This is the single source of
- * truth for design tokens; `src/index.css` only maps them into `@theme inline`.
+ * truth for design tokens; `src/theme.css` only maps them into `@theme inline`.
  */
 
 :root {
@@ -13,7 +13,7 @@
 	/**
 	 * Components reference the radius scale directly — e.g. sidebar.tsx uses
 	 * `[--radius:var(--radius-xl)]` and calendar.tsx `[--cell-radius:var(--radius-4xl)]`.
-	 * The `@theme inline` block in index.css inlines those values into utilities
+	 * The `@theme inline` block in theme.css inlines those values into utilities
 	 * but emits no custom properties, so without these declarations `--radius`
 	 * resolves to an invalid value inside the sidebar and every `rounded-*`
 	 * there computes to 0.
@@ -22,7 +22,7 @@
 	 * `--radius`, and a self-referential scale would form a CSS custom-property
 	 * cycle (which invalidates the whole chain).
 	 *
-	 * Clamped at `lg` — see the matching note in src/index.css.
+	 * Clamped at `lg` — see the matching note in src/theme.css.
 	 */
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);

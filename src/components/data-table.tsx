@@ -52,7 +52,8 @@ import {
 	InputGroupAddon,
 	InputGroupInput,
 } from "@/components/input-group";
-import { PaginationPager } from "@/components/pagination";
+import { DEFAULT_PAGE_SIZE, PaginationPager } from "@/components/pagination";
+import { Skeleton } from "@/components/skeleton";
 import {
 	Table,
 	TableBody,
@@ -61,6 +62,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/tooltip";
 
 const dataTableFeatures = tableFeatures({
 	columnFilteringFeature,
@@ -115,6 +117,11 @@ type DataTableColumnHeaderProps<
 	column: Column<DataTableFeatures, TData, TValue>;
 	title: string;
 	align?: "start" | "end";
+	/**
+	 * Explains the column in a tooltip. The title gets a dotted underline and
+	 * a help cursor; a sortable header shows the tooltip on its sort button.
+	 */
+	hint?: string;
 };
 
 function DataTableColumnHeader<
@@ -125,6 +132,7 @@ function DataTableColumnHeader<
 	column,
 	title,
 	align = "start",
+	hint,
 	className,
 	...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
@@ -137,7 +145,19 @@ function DataTableColumnHeader<
 				className={cn(align === "end" && "fui:text-right", className)}
 				{...props}
 			>
-				{title}
+				{hint ? (
+					<Tooltip>
+						<TooltipTrigger
+							type="button"
+							className="fui:cursor-help fui:underline fui:decoration-dotted fui:underline-offset-4"
+						>
+							{title}
+						</TooltipTrigger>
+						<TooltipContent>{hint}</TooltipContent>
+					</Tooltip>
+				) : (
+					title
+				)}
 			</div>
 		);
 	}
@@ -149,6 +169,33 @@ function DataTableColumnHeader<
 				? ArrowDownIcon
 				: CaretUpDownIcon;
 
+	const sortButton = (
+		<Button
+			variant="ghost"
+			size="sm"
+			onClick={column.getToggleSortingHandler()}
+			aria-label={
+				sorted === "asc"
+					? `${title}, sorted ascending`
+					: sorted === "desc"
+						? `${title}, sorted descending`
+						: `${title}, not sorted`
+			}
+			// A header is a sort control, not a link, so it opts out of the
+			// ghost variant's underline. Hover (from the ghost variant) and the
+			// sorted column both sit on `--tertiary`, at half strength in dark
+			// mode as the ghost hover is.
+			className="fui:-mx-2 fui:h-7 fui:gap-1 fui:font-medium fui:no-underline fui:data-[sorted=true]:bg-tertiary fui:data-[sorted=true]:text-tertiary-foreground fui:dark:data-[sorted=true]:bg-tertiary/50"
+			data-sorted={sorted !== false}
+		>
+			{title}
+			<Icon
+				data-icon="inline-end"
+				className={cn(sorted === false && "fui:opacity-50")}
+			/>
+		</Button>
+	);
+
 	return (
 		<div
 			data-slot="data-table-column-header"
@@ -159,26 +206,46 @@ function DataTableColumnHeader<
 			)}
 			{...props}
 		>
-			<Button
-				variant="ghost"
-				size="sm"
-				onClick={column.getToggleSortingHandler()}
-				aria-label={
-					sorted === "asc"
-						? `${title}, sorted ascending`
-						: sorted === "desc"
-							? `${title}, sorted descending`
-							: `${title}, not sorted`
-				}
-				className="fui:-mx-2 fui:h-7 fui:gap-1 fui:font-medium fui:data-[sorted=true]:bg-muted fui:data-[sorted=true]:text-foreground fui:dark:data-[sorted=true]:bg-muted/50"
-				data-sorted={sorted !== false}
-			>
-				{title}
-				<Icon
-					data-icon="inline-end"
-					className={cn(sorted === false && "fui:opacity-50")}
-				/>
-			</Button>
+			{hint ? (
+				<Tooltip>
+					<TooltipTrigger render={sortButton} />
+					<TooltipContent>{hint}</TooltipContent>
+				</Tooltip>
+			) : (
+				sortButton
+			)}
+		</div>
+	);
+}
+
+/**
+ * The content of an expanded row, for `renderSubComponent`: padded, with an
+ * optional small heading (`title`) and `description` above the detail, which
+ * is usually a nested `DataTable` with `pageSize={false}`.
+ */
+function DataTableSubPanel({
+	title,
+	description,
+	className,
+	children,
+}: {
+	title?: React.ReactNode;
+	description?: React.ReactNode;
+	className?: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<div
+			data-slot="data-table-sub-panel"
+			className={cn("fui:space-y-2 fui:px-4 fui:py-3", className)}
+		>
+			{title ? (
+				<p className="fui:text-xs fui:text-muted-foreground">{title}</p>
+			) : null}
+			{description ? (
+				<p className="fui:text-xs fui:text-muted-foreground">{description}</p>
+			) : null}
+			{children}
 		</div>
 	);
 }
@@ -241,6 +308,15 @@ type DataTableProps<TData extends Record<string, any>> = Omit<
 	onRowSelectionChange?: (rows: TData[]) => void;
 	/** Rendered in place of the table body when there are no matching rows. */
 	empty?: React.ReactNode;
+	/**
+	 * The rows are being fetched. While there are none to show yet, placeholder
+	 * rows stand in for them, instead of `empty`, which would claim there is
+	 * nothing to show. Rows already on screen stay during a refetch, so a
+	 * query's `isFetching` and `isLoading` both work.
+	 */
+	loading?: boolean;
+	/** How many placeholder rows `loading` shows. */
+	loadingRows?: number;
 	/** Extra controls rendered in the toolbar, after the search field. */
 	toolbar?: React.ReactNode;
 	/** Optional detail row rendered directly below each data row. */
@@ -308,11 +384,13 @@ function DataTable<
 	searchable = false,
 	hideableColumns = false,
 	toolbarSize = "default",
-	pageSize = 10,
+	pageSize = DEFAULT_PAGE_SIZE,
 	pageSizeOptions = [5, 10, 20, 50],
 	enableRowSelection = false,
 	onRowSelectionChange,
 	empty = "No results.",
+	loading = false,
+	loadingRows = 5,
 	toolbar,
 	renderSubComponent,
 	className,
@@ -413,10 +491,6 @@ function DataTable<
 
 	const rows = table.getRowModel().rows;
 	const showToolbar = searchable !== false || hideableColumns || !!toolbar;
-	const totalRows =
-		manualPagination && rowCount !== undefined
-			? rowCount
-			: table.getFilteredRowModel().rows.length;
 
 	return (
 		<div
@@ -496,7 +570,7 @@ function DataTable<
 			)}
 
 			<div className="fui:overflow-hidden fui:rounded-lg fui:border fui:bg-card">
-				<Table>
+				<Table aria-busy={loading || undefined}>
 					<TableHeader>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow key={headerGroup.id}>
@@ -521,7 +595,22 @@ function DataTable<
 						))}
 					</TableHeader>
 					<TableBody>
-						{rows.length === 0 ? (
+						{loading && rows.length === 0 ? (
+							Array.from({ length: loadingRows }, (_, index) => (
+								// Placeholders with nothing to tell them apart but position.
+								// biome-ignore lint/suspicious/noArrayIndexKey: static list
+								<TableRow key={index} className="fui:hover:bg-transparent">
+									{table.getVisibleLeafColumns().map((column, columnIndex) => (
+										<TableCell key={column.id}>
+											<Skeleton className="fui:h-4 fui:w-full fui:max-w-32 fui:rounded" />
+											{index === 0 && columnIndex === 0 ? (
+												<span className="fui:sr-only">Loading…</span>
+											) : null}
+										</TableCell>
+									))}
+								</TableRow>
+							))
+						) : rows.length === 0 ? (
 							<TableRow className="fui:hover:bg-transparent">
 								<TableCell
 									colSpan={table.getAllLeafColumns().length}
@@ -571,13 +660,6 @@ function DataTable<
 					pageSize={table.state.pagination.pageSize}
 					pageSizeOptions={pageSizeOptions}
 					onPageSizeChange={(size) => table.setPageSize(size)}
-					summary={
-						// Under `manualPagination` the row model holds only the page
-						// that was fetched, so the server's total is the honest figure.
-						enableRowSelection
-							? `${selectedRows.length} of ${totalRows} row(s) selected`
-							: `${totalRows} row(s)`
-					}
 				/>
 			)}
 		</div>
@@ -586,6 +668,7 @@ function DataTable<
 
 export {
 	createDataTableColumnHelper,
+	DataTableSubPanel,
 	DataTable,
 	type DataTableColumnDef,
 	DataTableColumnHeader,

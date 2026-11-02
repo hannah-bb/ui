@@ -108,7 +108,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"Label and value pairs in rows, for the details of one record. Compose `DescriptionList` with a `DescriptionListItem` per row, holding a `DescriptionListTerm` and a `DescriptionListDetails`. An empty value shows the same dash as an empty table cell. Rows stack on narrow screens and sit side by side from `sm` up.",
+					'Label and value pairs in rows, for the details of one record. Compose `DescriptionList` with a `DescriptionListItem` per row, holding a `DescriptionListTerm` and a `DescriptionListDetails`. An empty value shows the same dash as an empty table cell. Rows stack on narrow screens and sit side by side from `sm` up. Three compact layouts take the surrounding text size: `layout="inline"` sets the pairs side by side in a wrapping line, for a summary above a table, `layout="grid"` sets them in a tight two-column grid, for a table cell or a small tile, and `layout="stacked"` puts each label above its value, for figures beside a chart.',
 			},
 		},
 	},
@@ -119,3 +119,72 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+const summary: Detail[] = [
+	{ label: "Effective now", value: 42 },
+	{ label: "Scheduled", value: 11 },
+	{ label: "Disabled", value: 5 },
+	{ label: "Next to start", value: "15.10.2026, 16:05" },
+	{ label: "Next to end" },
+];
+
+const variantAttributes: Detail[] = [
+	{ label: "Colour", value: "Navy" },
+	{ label: "Size", value: "M" },
+	{ label: "Fit", value: "Regular" },
+];
+
+function CompactLists({
+	layout,
+	items,
+	className,
+}: {
+	layout: "inline" | "grid" | "stacked";
+	items: Detail[];
+	className?: string;
+}) {
+	return (
+		<DescriptionList layout={layout} className={className}>
+			{items.map((item) => (
+				<DescriptionListItem key={item.label}>
+					<DescriptionListTerm>{item.label}</DescriptionListTerm>
+					<DescriptionListDetails className="fui:tabular-nums">
+						{item.value}
+					</DescriptionListDetails>
+				</DescriptionListItem>
+			))}
+		</DescriptionList>
+	);
+}
+
+/**
+ * `inline` as a summary line above a table, `grid` in a table cell, `stacked`
+ * beside a chart.
+ */
+export const CompactLayouts: Story = {
+	name: "Compact layouts",
+	render: () => (
+		<div className="fui:flex fui:max-w-2xl fui:flex-col fui:gap-10">
+			<section className="fui:flex fui:flex-col fui:gap-3">
+				<h3 className="fui:text-sm fui:font-medium">Inline</h3>
+				<CompactLists layout="inline" items={summary} className="fui:text-sm" />
+			</section>
+			<section className="fui:flex fui:flex-col fui:gap-3">
+				<h3 className="fui:text-sm fui:font-medium">Grid</h3>
+				<CompactLists
+					layout="grid"
+					items={variantAttributes}
+					className="fui:w-fit fui:text-sm"
+				/>
+			</section>
+			<section className="fui:flex fui:flex-col fui:gap-3">
+				<h3 className="fui:text-sm fui:font-medium">Stacked</h3>
+				<CompactLists
+					layout="stacked"
+					items={summary.slice(0, 3)}
+					className="fui:text-xs"
+				/>
+			</section>
+		</div>
+	),
+};

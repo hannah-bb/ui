@@ -1,4 +1,6 @@
 import {
+	CaretDownIcon,
+	CaretUpIcon,
 	CheckCircleIcon,
 	CheckIcon,
 	type Icon,
@@ -9,6 +11,8 @@ import {
 import { cn } from "cn";
 import type * as React from "react";
 import { Badge } from "@/components/badge";
+import { Button } from "@/components/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/tooltip";
 
 /**
  * Cell renderers for `DataTable` and `Table`.
@@ -169,35 +173,56 @@ const tagColorValues = [
  * `icon` leads the label, for a tag whose glyph carries meaning on top of its
  * colour. It is marked `data-icon="inline-start"` rather than sized here: the
  * badge keys its padding and icon size off that attribute.
+ *
+ * `hint` explains the tag in a tooltip on hover, for a state whose label is
+ * too short to say what it means — the same tooltip a column header's `hint`
+ * shows.
  */
 function TagCell({
 	children,
 	variant = "outline",
 	color,
 	icon: LeadingIcon,
+	hint,
 	className,
 }: {
 	children: React.ReactNode;
 	variant?: BadgeVariant;
 	color?: TagColor;
 	icon?: Icon;
+	hint?: React.ReactNode;
 	className?: string;
 }) {
 	if (children === null || children === undefined || children === "") {
 		return <EmptyCell />;
 	}
 
-	return (
+	const tag = (
 		<Badge
 			variant={color ? null : variant}
 			data-color={color}
-			className={cn(color && tagColorClassNames[color], className)}
+			className={cn(
+				color && tagColorClassNames[color],
+				hint && "fui:cursor-help",
+				className,
+			)}
 		>
 			{LeadingIcon ? (
 				<LeadingIcon data-icon="inline-start" aria-hidden />
 			) : null}
 			{children}
 		</Badge>
+	);
+
+	if (!hint) {
+		return tag;
+	}
+
+	return (
+		<Tooltip>
+			<TooltipTrigger render={tag} />
+			<TooltipContent>{hint}</TooltipContent>
+		</Tooltip>
 	);
 }
 
@@ -232,11 +257,13 @@ const statusTones: Record<
 function StatusTagCell({
 	status,
 	icon,
+	hint,
 	children,
 	className,
 }: {
 	status: StatusTone;
 	icon?: Icon;
+	hint?: React.ReactNode;
 	children: React.ReactNode;
 	className?: string;
 }) {
@@ -247,6 +274,7 @@ function StatusTagCell({
 			variant={tone.variant}
 			color={tone.color}
 			icon={icon ?? tone.icon}
+			hint={hint}
 			className={className}
 		>
 			{children}
@@ -323,24 +351,283 @@ function IdCell({
 
 /**
  * Affordance for a cell whose whole content navigates somewhere, to put on the
- * router link that wraps it.
+ * router link that wraps it. Underlined on hover, or always under
+ * `data-underline-links` (see theme.css).
  */
-const cellLinkClassName = "fui:text-link fui:hover:underline";
+const cellLinkClassName =
+	"fui:text-link fui:hover:underline fui:underline-links:underline";
 
 /** A value the row does not have, rendered so the column keeps its rhythm. */
 function EmptyCell() {
 	return <span className="fui:text-muted-foreground">—</span>;
 }
 
+type DateTimeValue = Date | string | number | null | undefined;
+
+/**
+ * Parses a cell's date, or returns `null` for a value that means "not set":
+ * `null`, `undefined`, `""`, `0` (the Unix epoch), an unparseable string, and
+ * the zero time some backends send for "never" (`0001-01-01`, Go's
+ * `time.Time{}`).
+ */
+function parseCellDate(value: DateTimeValue): Date | null {
+	if (value === null || value === undefined || value === "" || value === 0) {
+		return null;
+	}
+	const date = value instanceof Date ? value : new Date(value);
+	const time = date.getTime();
+	if (Number.isNaN(time) || date.getUTCFullYear() <= 1) return null;
+	return date;
+}
+
+/**
+ * A date and time, the day in the regular foreground and the time muted, so a
+ * column of timestamps reads as a run of days at a glance with the exact time
+ * still there.
+ *
+ * Takes the raw value (a `Date`, an ISO string or Unix milliseconds) and
+ * formats both halves with `Intl.DateTimeFormat`: by default the reader's
+ * locale with the numeric date and time `toLocaleDateString()` and
+ * `toLocaleTimeString()` produce. Pass `locale`, `dateFormat` and
+ * `timeFormat` for a fixed convention, e.g. `locale="de-CH"` with
+ * `{ dateStyle: "medium" }` and `{ timeStyle: "medium" }`.
+ *
+ * An unset value (see `parseCellDate`) renders `empty`, by default the
+ * `EmptyCell` dash.
+ */
+function DateTimeCell({
+	value,
+	locale,
+	dateFormat,
+	timeFormat = { hour: "numeric", minute: "numeric", second: "numeric" },
+	empty = <EmptyCell />,
+}: {
+	value: DateTimeValue;
+	locale?: string;
+	dateFormat?: Intl.DateTimeFormatOptions;
+	timeFormat?: Intl.DateTimeFormatOptions;
+	empty?: React.ReactNode;
+}) {
+	const date = parseCellDate(value);
+	if (!date) return empty;
+
+	return (
+		<span data-slot="date-time-cell" className="fui:whitespace-nowrap">
+			<span className="fui:text-foreground">
+				{new Intl.DateTimeFormat(locale, dateFormat).format(date)}
+			</span>{" "}
+			<span className="fui:text-muted-foreground">
+				{new Intl.DateTimeFormat(locale, timeFormat).format(date)}
+			</span>
+		</span>
+	);
+}
+
+/**
+ * A number, right-aligned with tabular figures so digits line up down the
+ * column, and formatted for `locale` (the reader's by default) with
+ * `format`'s `Intl.NumberFormat` options. A string renders as given, for a
+ * value that is already formatted (a ratio such as `16:9`). A missing value
+ * shows the `EmptyCell` dash, still right-aligned.
+ *
+ * Pair it with `align="end"` on the column's `DataTableColumnHeader`.
+ */
+function NumberCell({
+	value,
+	locale,
+	format,
+}: {
+	value: number | string | null | undefined;
+	locale?: string;
+	format?: Intl.NumberFormatOptions;
+}) {
+	if (value === null || value === undefined || value === "") {
+		return (
+			<div data-slot="number-cell" className="fui:text-right">
+				<EmptyCell />
+			</div>
+		);
+	}
+
+	return (
+		<div data-slot="number-cell" className="fui:text-right fui:tabular-nums">
+			{typeof value === "number" ? value.toLocaleString(locale, format) : value}
+		</div>
+	);
+}
+
+/**
+ * Free text cut to one line at 16rem, with the whole text in its tooltip: an
+ * error message or a reason, which would otherwise widen the column for every
+ * row. A missing value shows the `EmptyCell` dash.
+ */
+function TruncateCell({ children }: { children: string | null | undefined }) {
+	if (!children) return <EmptyCell />;
+
+	return (
+		<span
+			data-slot="truncate-cell"
+			className="fui:block fui:max-w-64 fui:truncate"
+			title={children}
+		>
+			{children}
+		</span>
+	);
+}
+
+/**
+ * A link that leaves the app, opening in a new tab: the URL itself by
+ * default, or `children` (e.g. a key) pointing at `href`. Long values break
+ * anywhere so they wrap inside the column; `truncate` cuts them to one line at
+ * 20rem instead, with the whole value in the tooltip. A missing `href` shows
+ * the `EmptyCell` dash.
+ */
+function ExternalLinkCell({
+	href,
+	children,
+	truncate = false,
+}: {
+	href: string | null | undefined;
+	children?: React.ReactNode;
+	truncate?: boolean;
+}) {
+	if (!href) return <EmptyCell />;
+
+	return (
+		<a
+			data-slot="external-link-cell"
+			href={href}
+			target="_blank"
+			rel="noreferrer"
+			className={cellLinkClassName}
+		>
+			<IdCell
+				className={
+					truncate ? "fui:block fui:max-w-xs fui:truncate" : "fui:break-all"
+				}
+				title={truncate ? href : undefined}
+			>
+				{children ?? href}
+			</IdCell>
+		</a>
+	);
+}
+
+/**
+ * A value that opens a detail row below its own (a count of files, of skipped
+ * items): a small outline button with the value and a caret, `aria-expanded`
+ * while open. Wire `onToggle` to the state the table's `renderSubComponent`
+ * reads, and render the detail in a `DataTableSubPanel`.
+ *
+ * With `expandable={false}` (nothing behind the value, e.g. a count recorded
+ * before its detail was kept) it renders the value as plain text rather than a
+ * control that opens an empty panel.
+ */
+function ExpandToggleCell({
+	expanded,
+	onToggle,
+	expandable = true,
+	children,
+}: {
+	expanded: boolean;
+	onToggle: () => void;
+	expandable?: boolean;
+	children: React.ReactNode;
+}) {
+	if (!expandable) return children;
+
+	return (
+		<Button
+			variant="outline"
+			size="xs"
+			aria-expanded={expanded}
+			onClick={onToggle}
+		>
+			{children}
+			{expanded ? <CaretUpIcon /> : <CaretDownIcon />}
+		</Button>
+	);
+}
+
+const thumbnailSizes = {
+	sm: "fui:size-8",
+	md: "fui:size-12",
+	lg: "fui:size-32",
+} as const;
+
+/**
+ * An image preview: a logo, a product shot or a media asset, contained (never
+ * cropped) on a white square so transparent and off-white images keep their
+ * edges. `sm` (32px) for logos and swatches, `md` (48px) for a table row, `lg`
+ * (128px) for a gallery; `bordered` outlines the square.
+ *
+ * Without a `src` it shows a muted placeholder of the same size with a dash
+ * and `alt` as its label, so the column keeps its rhythm. Other `<img>`
+ * attributes (`loading`, `onError`) pass through.
+ */
+function ThumbnailCell({
+	src,
+	alt,
+	size = "md",
+	bordered = false,
+	className,
+	...props
+}: Omit<React.ComponentProps<"img">, "src" | "alt"> & {
+	src: string | null | undefined;
+	alt: string;
+	size?: keyof typeof thumbnailSizes;
+	bordered?: boolean;
+}) {
+	if (!src) {
+		return (
+			<div
+				data-slot="thumbnail-cell"
+				role="img"
+				aria-label={alt}
+				className={cn(
+					"fui:flex fui:items-center fui:justify-center fui:rounded fui:bg-muted fui:text-[10px] fui:font-medium fui:text-muted-foreground",
+					thumbnailSizes[size],
+					bordered && "fui:border",
+					className,
+				)}
+			>
+				—
+			</div>
+		);
+	}
+
+	return (
+		<img
+			data-slot="thumbnail-cell"
+			src={src}
+			alt={alt}
+			className={cn(
+				"fui:rounded fui:bg-white fui:object-contain",
+				thumbnailSizes[size],
+				bordered && "fui:border",
+				className,
+			)}
+			{...props}
+		/>
+	);
+}
+
 export {
 	BooleanCell,
 	cellLinkClassName,
+	DateTimeCell,
 	EmptyCell,
+	ExpandToggleCell,
+	ExternalLinkCell,
 	IdCell,
+	NumberCell,
+	parseCellDate,
 	StatusTagCell,
 	type StatusTone,
 	TagCell,
 	type TagColor,
 	TagListCell,
 	tagColorValues,
+	ThumbnailCell,
+	TruncateCell,
 };

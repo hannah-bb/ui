@@ -12,7 +12,8 @@
  *
  * Vite resolves the library entries from a glob when the config loads, so
  * adding or removing a module under `src/` restarts the Vite watcher.
- * Theme files are not part of the module graph and are copied directly.
+ * Theme files and `theme.css` are not part of the module graph and are copied
+ * directly.
  *
  * While it runs, a pid file tells the Claude Code Stop hook
  * (.claude/hooks/rebuild-if-changed.sh) to skip its full rebuild, which would
@@ -206,6 +207,15 @@ const entries = new Set(
 const srcWatcher = watch(SRC, { recursive: true }, async (event, file) => {
 	if (!file) return;
 	file = file.split("\\").join("/");
+
+	if (file === "theme.css") {
+		const target = join(DIST, file);
+		await copyFile(join(SRC, file), target).then(
+			() => log("theme", `copied ${file}`),
+			() => rm(target, { force: true }),
+		);
+		return;
+	}
 
 	if (file.startsWith("themes/") && file.endsWith(".css")) {
 		const target = join(DIST, "themes", basename(file));

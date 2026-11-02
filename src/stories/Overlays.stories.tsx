@@ -25,6 +25,7 @@ import {
 } from "../components/dialog";
 import {
 	Drawer,
+	DrawerBody,
 	DrawerClose,
 	DrawerContent,
 	DrawerDescription,
@@ -229,6 +230,13 @@ function QuickActionsDrawer({ direction }: { direction: Side }) {
 						Applies to the 3 selected products.
 					</DrawerDescription>
 				</DrawerHeader>
+				<DrawerBody>
+					<ul className="fui:flex fui:flex-col fui:gap-1 fui:text-sm">
+						<li>PROD-001 · Summer dress</li>
+						<li>PROD-002 · Running shoe</li>
+						<li>PROD-003 · Leather belt</li>
+					</ul>
+				</DrawerBody>
 				<DrawerFooter>
 					<Button>Mark as discountable</Button>
 					<Button variant="outline">Export as CSV</Button>
@@ -249,7 +257,7 @@ const meta = {
 		docs: {
 			description: {
 				component:
-					"Panels that open over the page: `Dialog` for a short task, `AlertDialog` to confirm something that cannot be undone, `Sheet` for a detail panel beside the listing, and `Drawer` for a panel that can be dragged closed. Each composes a header (title and description), its content and a footer of actions. `side` on `SheetContent` and `direction` on `Drawer` pick the edge it opens from.",
+					"Panels that open over the page: `Dialog` for a short task, `AlertDialog` to confirm something that cannot be undone, `Sheet` for a detail panel beside the listing, and `Drawer` for a panel that can be dragged closed. Each composes a header (title and description), its content and a footer of actions; a drawer's content goes in `DrawerBody`, which scrolls so the footer stays in view. `side` on `SheetContent` and `direction` on `Drawer` pick the edge it opens from.",
 			},
 		},
 	},

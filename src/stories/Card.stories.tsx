@@ -84,6 +84,7 @@ import {
 	SelectValue,
 } from "../components/select";
 import { Skeleton } from "../components/skeleton";
+import { StatCard } from "../components/stat-card";
 import { Switch } from "../components/switch";
 import {
 	Table,
@@ -533,22 +534,23 @@ export const Stat: Story = {
 };
 
 export const NumberStat: Story = {
+	parameters: {
+		docs: {
+			description: {
+				story:
+					"The `StatCard` component (Data Display / Stat Card) at its default size, with an icon.",
+			},
+		},
+	},
 	render: () => (
 		<div className="fui:grid fui:gap-4 fui:sm:grid-cols-2 fui:xl:grid-cols-4">
 			{stats.map((stat) => (
-				<Card key={stat.label}>
-					<CardHeader>
-						<CardTitle className="fui:text-4xl fui:font-bold fui:tabular-nums fui:text-accent-highlight">
-							{stat.value}
-						</CardTitle>
-						<CardDescription className="fui:text-base fui:text-foreground">
-							{stat.label}
-						</CardDescription>
-						<CardAction>
-							<stat.icon className="fui:size-4 fui:text-muted-foreground" />
-						</CardAction>
-					</CardHeader>
-				</Card>
+				<StatCard
+					key={stat.label}
+					label={stat.label}
+					value={stat.value}
+					icon={stat.icon}
+				/>
 			))}
 		</div>
 	),
@@ -579,7 +581,8 @@ export const AreaChartCard: Story = {
 			<CardContent>
 				<ChartContainer
 					config={revenueChartConfig}
-					className="fui:aspect-auto fui:h-[260px] fui:w-full"
+					aspect="auto"
+					className="fui:h-[260px] fui:w-full"
 				>
 					<AreaChart data={revenueByMonth} margin={{ left: 4, right: 4 }}>
 						<defs>
@@ -658,7 +661,8 @@ export const BarChartCard: Story = {
 			<CardContent>
 				<ChartContainer
 					config={trafficChartConfig}
-					className="fui:aspect-auto fui:h-[240px] fui:w-full"
+					aspect="auto"
+					className="fui:h-[240px] fui:w-full"
 				>
 					<BarChart data={trafficBySource} margin={{ left: 4, right: 4 }}>
 						<CartesianGrid vertical={false} />
@@ -687,7 +691,8 @@ function PieChartBasic() {
 		<PieChartCard title="Pie Chart">
 			<ChartContainer
 				config={trafficShareConfig}
-				className="fui:mx-auto fui:aspect-square fui:max-h-[250px]"
+				aspect="square"
+				className="fui:mx-auto fui:max-h-[250px]"
 			>
 				<PieChart>
 					<ChartTooltip
@@ -711,7 +716,8 @@ function PieChartDonut() {
 		<PieChartCard title="Pie Chart - Donut">
 			<ChartContainer
 				config={trafficShareConfig}
-				className="fui:mx-auto fui:aspect-square fui:max-h-[250px]"
+				aspect="square"
+				className="fui:mx-auto fui:max-h-[250px]"
 			>
 				<PieChart>
 					<ChartTooltip
@@ -736,7 +742,8 @@ function PieChartDonutWithText() {
 		<PieChartCard title="Pie Chart - Donut with Text">
 			<ChartContainer
 				config={trafficShareConfig}
-				className="fui:mx-auto fui:aspect-square fui:max-h-[250px]"
+				aspect="square"
+				className="fui:mx-auto fui:max-h-[250px]"
 			>
 				<PieChart>
 					<ChartTooltip
@@ -792,7 +799,8 @@ function PieChartCustomLabel() {
 		<PieChartCard title="Pie Chart - Custom Label">
 			<ChartContainer
 				config={trafficShareConfig}
-				className="fui:mx-auto fui:aspect-square fui:max-h-[250px] fui:px-0"
+				aspect="square"
+				className="fui:mx-auto fui:max-h-[250px] fui:px-0"
 			>
 				<PieChart>
 					<ChartTooltip

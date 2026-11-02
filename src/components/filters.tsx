@@ -4,11 +4,12 @@ import {
 	XIcon,
 } from "@phosphor-icons/react";
 import { cn } from "cn";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, set } from "date-fns";
 import * as React from "react";
 import { Button } from "@/components/button";
 import { Calendar } from "@/components/calendar";
 import { Checkbox } from "@/components/checkbox";
+import { Input } from "@/components/input";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -265,7 +266,12 @@ function FilterSelect<T extends string>({
 				<SelectTrigger
 					id={id}
 					size={size}
-					className={cn("fui:w-full", className)}
+					// The trigger mutes its placeholder state; undo that here, as
+					// FilterMultiSelect does: "no restriction" is a real filter state.
+					className={cn(
+						"fui:w-full fui:data-placeholder:text-foreground",
+						className,
+					)}
 				>
 					<SelectValue placeholder={placeholder} />
 				</SelectTrigger>
@@ -369,25 +375,98 @@ function FilterMultiSelect<T extends string>({
  * no `from` is still accepted and described ("Until 31 March"), so a value
  * restored from a URL keeps working, but the calendar itself only produces
  * start-first periods.
+ *
+ * With `FilterDateRange`'s `withTime`, both ends also carry a time of day.
  */
 type FilterPeriod = {
 	from?: Date;
 	to?: Date;
 };
 
-function formatBound(date: Date) {
-	return format(date, "d MMM yyyy");
-}
+function describePeriod(
+	period: FilterPeriod | undefined,
+	placeholder: string,
+	withTime: boolean,
+) {
+	const bound = (date: Date) =>
+		format(date, withTime ? "d MMM yyyy, HH:mm" : "d MMM yyyy");
 
-function describePeriod(period: FilterPeriod | undefined, placeholder: string) {
 	if (period?.from && period.to) {
 		// The first click of a range picks one day as both ends.
-		if (isSameDay(period.from, period.to)) return formatBound(period.from);
-		return `${formatBound(period.from)} – ${formatBound(period.to)}`;
+		if (isSameDay(period.from, period.to)) {
+			return withTime
+				? `${bound(period.from)} – ${format(period.to, "HH:mm")}`
+				: bound(period.from);
+		}
+		return `${bound(period.from)} – ${bound(period.to)}`;
 	}
-	if (period?.from) return `From ${formatBound(period.from)}`;
-	if (period?.to) return `Until ${formatBound(period.to)}`;
+	if (period?.from) return `From ${bound(period.from)}`;
+	if (period?.to) return `Until ${bound(period.to)}`;
 	return placeholder;
+}
+
+/** `day` at the time of day `time` shows. */
+function atTimeOf(day: Date, time: Date) {
+	return set(day, {
+		hours: time.getHours(),
+		minutes: time.getMinutes(),
+		seconds: time.getSeconds(),
+		milliseconds: time.getMilliseconds(),
+	});
+}
+
+/**
+ * The start of a period, at the start of its minute, and its end, at the end
+ * of its minute: a period "until 17:30" includes the whole of 17:30.
+ */
+const periodEdges = {
+	from: { seconds: 0, milliseconds: 0 },
+	to: { seconds: 59, milliseconds: 999 },
+} as const;
+
+/** A newly picked day's time: the start of the day, or the end of it. */
+const periodDefaultTimes = {
+	from: { hours: 0, minutes: 0, ...periodEdges.from },
+	to: { hours: 23, minutes: 59, ...periodEdges.to },
+} as const;
+
+/**
+ * One end's time of day, under the calendar. Disabled until that end has a
+ * day.
+ */
+function FilterPeriodTime({
+	label,
+	edge,
+	value,
+	onValueChange,
+}: {
+	label: string;
+	edge: "from" | "to";
+	value: Date | undefined;
+	onValueChange: (value: Date) => void;
+}) {
+	const id = React.useId();
+
+	return (
+		<div className="fui:flex fui:flex-col fui:gap-1">
+			<Label htmlFor={id} className={filterLabelClassName}>
+				{label}
+			</Label>
+			<Input
+				id={id}
+				type="time"
+				className="fui:h-8 fui:w-28"
+				disabled={!value}
+				value={value ? format(value, "HH:mm") : ""}
+				onChange={(event) => {
+					const [hours, minutes] = event.target.value.split(":").map(Number);
+					// A cleared or half-typed time keeps the previous one.
+					if (!value || Number.isNaN(hours) || Number.isNaN(minutes)) return;
+					onValueChange(set(value, { hours, minutes, ...periodEdges[edge] }));
+				}}
+			/>
+		</div>
+	);
 }
 
 /**
@@ -402,26 +481,50 @@ function describePeriod(period: FilterPeriod | undefined, placeholder: string) {
  * is midnight *opening* the last day: compare against `endOfDay(to)` to include
  * it. A caller storing the period in a URL or a query converts at its own
  * boundary, since the format that belongs there is the caller's concern.
+ *
+ * `withTime` adds a start and an end time under the calendar, for a period
+ * that does not follow whole days, such as a promotion's validity. Each end is
+ * then an exact moment, included in the period: a newly picked start day
+ * begins at 00:00, a newly picked end day runs until 23:59, and picking
+ * another day keeps the time already set. The field then takes two of the
+ * filter bar's columns.
  */
 function FilterDateRange({
 	label,
 	value,
 	onValueChange,
 	placeholder = "Any time",
+	withTime = false,
 	className,
 }: {
 	label: string;
 	value: FilterPeriod | undefined;
 	onValueChange: (period: FilterPeriod | undefined) => void;
 	placeholder?: string;
+	withTime?: boolean;
 	className?: string;
 }) {
 	const id = React.useId();
 	const size = useFilterSize();
 	const empty = !value?.from && !value?.to;
 
+	/** A picked day, at the time this end already had, or the default one. */
+	const pickedDay = (edge: "from" | "to", day: Date | undefined) => {
+		if (!day || !withTime) return day;
+		const current = value?.[edge];
+		return current
+			? atTimeOf(day, current)
+			: set(day, periodDefaultTimes[edge]);
+	};
+
 	return (
-		<FilterField label={label} htmlFor={id}>
+		<FilterField
+			label={label}
+			htmlFor={id}
+			// Times double the summary's length, so it takes two of the bar's
+			// columns rather than cutting off the end.
+			className={cn(withTime && "fui:sm:col-span-2")}
+		>
 			<Popover>
 				<PopoverTrigger
 					render={
@@ -452,7 +555,7 @@ function FilterDateRange({
 							<CalendarDotsIcon className="fui:text-foreground" />
 							{/* A long range is cut off rather than widening the field. */}
 							<span className="fui:truncate">
-								{describePeriod(value, placeholder)}
+								{describePeriod(value, placeholder, withTime)}
 							</span>
 						</Button>
 					}
@@ -469,12 +572,42 @@ function FilterDateRange({
 						onSelect={(range) =>
 							onValueChange(
 								range?.from || range?.to
-									? { from: range.from, to: range.to }
+									? {
+											from: pickedDay("from", range.from),
+											to: pickedDay("to", range.to),
+										}
 									: undefined,
 							)
 						}
 					/>
-					{empty ? null : (
+					{withTime ? (
+						<div className="fui:flex fui:items-end fui:gap-3 fui:border-t fui:px-3 fui:py-2">
+							<FilterPeriodTime
+								label="Start time"
+								edge="from"
+								value={value?.from}
+								onValueChange={(from) => onValueChange({ ...value, from })}
+							/>
+							<FilterPeriodTime
+								label="End time"
+								edge="to"
+								value={value?.to}
+								onValueChange={(to) => onValueChange({ ...value, to })}
+							/>
+							{empty ? null : (
+								<Button
+									type="button"
+									variant="ghost"
+									size="xs"
+									className="fui:mb-1 fui:ml-auto"
+									onClick={() => onValueChange(undefined)}
+								>
+									<XIcon />
+									Clear
+								</Button>
+							)}
+						</div>
+					) : empty ? null : (
 						<div className="fui:flex fui:justify-end fui:border-t fui:px-3 fui:py-2">
 							<Button
 								type="button"

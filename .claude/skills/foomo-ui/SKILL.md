@@ -57,7 +57,9 @@ repository.
   `@foomo/ui/themes/neutral.css` or provide the complete token set themselves.
 - Dark mode is selected by a `.dark` ancestor.
 - Internal utility classes use `fui:`. Consumer `className` values use the host
-  application's normal unprefixed Tailwind utilities.
+  application's normal unprefixed Tailwind utilities, and they win over a
+  component's own classes: the library's utilities ship in the `components`
+  cascade layer, below the host's `utilities`.
 - Prefer component variants and explicit component props over selectors aimed
   at compiled classes or `data-slot` internals.
 - Use semantic tokens such as `text-destructive`, `text-success`, and

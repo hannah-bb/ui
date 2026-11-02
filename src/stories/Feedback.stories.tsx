@@ -5,7 +5,7 @@ import {
 	WarningOctagonIcon,
 } from "@phosphor-icons/react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type * as React from "react";
+import * as React from "react";
 import { toast } from "sonner";
 
 import {
@@ -17,6 +17,7 @@ import {
 import { Button } from "../components/button";
 import { Toaster } from "../components/sonner";
 import { Spinner } from "../components/spinner";
+import { useErrorToast } from "../hooks/use-error-toast";
 
 function recalculate() {
 	return new Promise<void>((resolve) => setTimeout(resolve, 1500));
@@ -202,3 +203,51 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+/**
+ * A list that loads on demand and can be told to fail, so the toast `useErrorToast`
+ * raises can be seen: one per failure, again only after a successful retry.
+ */
+function ErrorToastDemo() {
+	const [state, setState] = React.useState<
+		"idle" | "loading" | "failed" | "loaded"
+	>("idle");
+
+	useErrorToast(
+		state === "failed",
+		"Failed to load prices. Please try again later.",
+	);
+
+	const load = (fail: boolean) => {
+		setState("loading");
+		setTimeout(() => setState(fail ? "failed" : "loaded"), 600);
+	};
+
+	return (
+		<div className="fui:flex fui:flex-col fui:gap-4">
+			<div className="fui:flex fui:gap-2">
+				<Button variant="outline" onClick={() => load(true)}>
+					Load, failing
+				</Button>
+				<Button variant="outline" onClick={() => load(false)}>
+					Load
+				</Button>
+			</div>
+			<p className="fui:text-sm fui:text-muted-foreground">State: {state}</p>
+			<Toaster />
+		</div>
+	);
+}
+
+export const ErrorToast: Story = {
+	name: "Error toast (useErrorToast)",
+	parameters: {
+		docs: {
+			description: {
+				story:
+					"`useErrorToast(error, message)` from `@foomo/ui/hooks/use-error-toast` shows `toast.error(message)` when `error` turns truthy, e.g. a query's `isError`. It is free of any data library and needs one `Toaster` in the app.",
+			},
+		},
+	},
+	render: () => <ErrorToastDemo />,
+};
