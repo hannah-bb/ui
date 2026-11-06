@@ -8,6 +8,47 @@ All notable changes to `@foomo/ui` are documented here. The format follows
 
 ### Added
 
+- Progress lists: `@foomo/ui/components/progress-list`. `ProgressList` holds a
+  `ProgressListItem` per labelled bar: the label and the value as a percentage
+  on one line, the bar under them. `color` sets a bar's colour as any CSS
+  value, e.g. `var(--chart-2)`. Storybook: Data Display / Card / Progress
+  List.
+- Item lists: `@foomo/ui/components/item-list`. `ItemList` holds an
+  `ItemListEntry` per entry: a title, an optional description, an optional
+  avatar or icon in front (`media`) and an optional slot at the end (`end`),
+  such as a time or a switch. `variant="divided"` (the default) splits compact
+  entries with a line, for a feed; `variant="outline"` frames each entry, for
+  a short list of things to act on. A real `<ul>`/`<li>` list. Storybook: Data
+  Display / Card / Activity Feed and Settings List.
+- Confirm dialogs from a menu: `nativeButton={false}` on `ConfirmDialog` for a
+  `trigger` that is not a `<button>`, such as a `DropdownMenuItem` in a row's
+  actions menu.
+
+- Section cards: `@foomo/ui/components/section-card`. `SectionCard` is one
+  aspect of a record on a detail page, a card with an optional `title`,
+  `description` and header `action` over its content. `SectionCardGrid` lays
+  them out two to a row from `lg`, one per row below it. Storybook: Data
+  Display / Section Card.
+- Async content: `@foomo/ui/components/async-content`. `AsyncContent` shows
+  fetched content in one of four states: a spinner with "Loading…", the error
+  in a destructive `Alert`, a muted "not found" text when there is no data, or
+  `children(data)`. Storybook: Overlays and Feedback / Async Content.
+- Text formatters: `@foomo/ui/lib/format`. `formatDateTime` (date and time),
+  `formatDate` (the day, month spelled short), `formatBytes` (B to GB) and
+  `formatYesNo` (a flag as "Yes"/"No", `undefined` when unknown). Each gives an
+  empty result for a value that is not set, so `DescriptionListDetails` shows
+  the dash. `parseDate` is the parser they share with `DateTimeCell`
+  (`parseCellDate` stays as an alias).
+- Table state in the URL: `@foomo/ui/lib/table-state`. `toPaginationState` and
+  `fromPaginationState` convert between a server-driven `DataTable`'s
+  pagination and a 1-based `page` with a `pageSize`, falling back to page 1 and
+  `DEFAULT_PAGE_SIZE` for a missing or invalid value. `toSortingState` and
+  `fromSortingState` do the same for a single sort field and direction.
+- Tag colours by position: `tagColorAt(index)` gives the tag palette colour for
+  the `index`-th category, starting over after the sixth, and
+  `assignTagColors(keys)` maps each key to one in the order given. Both in
+  `@foomo/ui/components/table-cells`.
+
 - JSON views: `@foomo/ui/components/json-view`. `JsonView` is a collapsible
   tree of a payload with "Expand all" and "Collapse all", styled with the
   theme's tokens (so it follows dark mode) and an `empty` state. `RawViewPanel`
@@ -181,6 +222,11 @@ All notable changes to `@foomo/ui` are documented here. The format follows
 
 ### Changed
 
+- `DashboardSection`'s `title` is optional. Without it the section is the grid
+  alone, for a stage that a tab or another heading already names.
+- Chart grid lines use the full `--border` colour instead of half of it, the
+  colour apps were setting on each `CartesianGrid` by hand. `BarListChart` no
+  longer sets it itself.
 - Host classes win over component defaults: `ui.css` now builds the library's
   utilities into the `components` cascade layer instead of `utilities`. A
   class an app passes through `className` lands in the app's own `utilities`
@@ -241,10 +287,11 @@ All notable changes to `@foomo/ui` are documented here. The format follows
   the search and `toolbar`, so it stays put when filters wrap. Beside a
   `FilterBar` it lines up with the first row of controls. `FilterLabelSpacer`
   is exported for any control that needs the same alignment.
-- Data Table: sortable column headers (`DataTableColumnHeader`) are no
-  longer underlined, and the sorted column sits on `--tertiary` instead of
-  `--muted`, matching the header's hover. They opt out of the `ghost`
-  button's underline like calendar days do.
+- Data Table: sortable column headers (`DataTableColumnHeader`) mark the
+  sorted column the way the sidebar marks its active entry: a 2px line in the
+  foreground colour under the title, with no fill (was a `--muted`
+  background). Hover shows the same line in the border colour. They opt out of
+  the `ghost` button's underline and fill.
 - Filters: the empty state of `FilterSelect` and `FilterMultiSelect`
   ("Any", "All brands") and `FilterDateRange` ("Any time") is in the
   foreground colour rather than muted, since "no restriction" is a real

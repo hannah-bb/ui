@@ -38,9 +38,14 @@ type ConfirmDialogState = {
  * action needs; as a function it gets the dialog's state, to lock the field
  * once the action is armed. `confirmDisabled` holds the confirm button until
  * that input is valid.
+ *
+ * Set `nativeButton={false}` when `trigger` is not a `<button>`, such as a
+ * `DropdownMenuItem` in a row's actions menu, so the trigger gets the button
+ * semantics it lacks.
  */
 function ConfirmDialog({
 	trigger,
+	nativeButton = true,
 	title,
 	description,
 	children,
@@ -56,6 +61,7 @@ function ConfirmDialog({
 	onOpenChange,
 }: {
 	trigger: React.ReactElement;
+	nativeButton?: boolean;
 	title: React.ReactNode;
 	description?: React.ReactNode;
 	children?: React.ReactNode | ((state: ConfirmDialogState) => React.ReactNode);
@@ -115,7 +121,7 @@ function ConfirmDialog({
 
 	return (
 		<AlertDialog open={open} onOpenChange={changeOpen}>
-			<AlertDialogTrigger render={trigger} />
+			<AlertDialogTrigger render={trigger} nativeButton={nativeButton} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>{title}</AlertDialogTitle>

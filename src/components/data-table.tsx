@@ -181,14 +181,16 @@ function DataTableColumnHeader<
 						? `${title}, sorted descending`
 						: `${title}, not sorted`
 			}
-			// A header is a sort control, not a link, so it opts out of the
-			// ghost variant's underline. Hover (from the ghost variant) and the
-			// sorted column both sit on `--tertiary`, at half strength in dark
-			// mode as the ghost hover is.
-			className="fui:-mx-2 fui:h-7 fui:gap-1 fui:font-medium fui:no-underline fui:data-[sorted=true]:bg-tertiary fui:data-[sorted=true]:text-tertiary-foreground fui:dark:data-[sorted=true]:bg-tertiary/50"
+			// The sorted column is marked like the active sidebar entry: a 2px
+			// line in the foreground colour under its title, with no fill. Hover
+			// shows the same line in the border colour, as in the sidebar. The
+			// line is a bottom border on the title (a transparent top border
+			// keeps it centred), so the sort icon stays outside it; the ghost
+			// variant's fill and text underline are switched off.
+			className="fui:-mx-2 fui:h-7 fui:gap-1 fui:font-medium fui:no-underline fui:hover:bg-transparent fui:dark:hover:bg-transparent fui:aria-expanded:bg-transparent fui:[&>span]:border-y-2 fui:[&>span]:border-transparent fui:[&>span]:py-0.5 fui:not-data-[sorted=true]:hover:[&>span]:border-b-border fui:data-[sorted=true]:[&>span]:border-b-foreground"
 			data-sorted={sorted !== false}
 		>
-			{title}
+			<span>{title}</span>
 			<Icon
 				data-icon="inline-end"
 				className={cn(sorted === false && "fui:opacity-50")}

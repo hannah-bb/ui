@@ -78,6 +78,19 @@ repository.
   handling unless the corresponding `manual*` prop is explicitly `false`.
 - Reuse `BooleanCell`, `TagCell`, `TagListCell`, `IdCell`, `EmptyCell`, and
   `cellLinkClassName` from `@foomo/ui/components/table-cells`.
+- Keep a list's page and sort order in the URL with `toPaginationState`,
+  `fromPaginationState`, `toSortingState` and `fromSortingState` from
+  `@foomo/ui/lib/table-state` rather than converting `pageIndex` by hand.
+- Colour chart marks by category with `tagColorAt` or `assignTagColors`.
+
+## Detail Pages
+
+- Lay a record's aspects out as `SectionCard`s in a `SectionCardGrid`
+  (`@foomo/ui/components/section-card`).
+- Wrap fetched content in `AsyncContent` (`@foomo/ui/components/async-content`)
+  for its loading, error and not-found states.
+- Format text values with `@foomo/ui/lib/format` (`formatDateTime`,
+  `formatDate`, `formatBytes`, `formatYesNo`).
 
 ## Verification
 

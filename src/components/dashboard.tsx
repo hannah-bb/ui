@@ -52,6 +52,9 @@ type DashboardResource<T> =
  * One stage of a dashboard: a heading over a grid of tiles. The grid has one
  * column on small screens, two from `md` and, with `columns={3}` (the
  * default), three from `xl`.
+ *
+ * Leave out `title` where something else already names the stage, such as the
+ * tab it sits in; the grid then starts at the top.
  */
 function DashboardSection({
 	title,
@@ -59,7 +62,7 @@ function DashboardSection({
 	className,
 	children,
 }: {
-	title: React.ReactNode;
+	title?: React.ReactNode;
 	columns?: 2 | 3;
 	className?: string;
 	children: React.ReactNode;
@@ -69,9 +72,11 @@ function DashboardSection({
 			data-slot="dashboard-section"
 			className={cn("fui:flex fui:flex-col fui:gap-3", className)}
 		>
-			<h2 className="fui:font-heading fui:text-base fui:font-medium">
-				{title}
-			</h2>
+			{title ? (
+				<h2 className="fui:font-heading fui:text-base fui:font-medium">
+					{title}
+				</h2>
+			) : null}
 			<div
 				className={cn(
 					"fui:grid fui:gap-4 fui:md:grid-cols-2",
@@ -383,7 +388,7 @@ function BarListChart<T extends { label: string; color: string }>({
 			className={cn("fui:h-full fui:w-full", className)}
 		>
 			<BarChart data={data} layout="vertical" margin={margin}>
-				<CartesianGrid horizontal={false} stroke="var(--border)" />
+				<CartesianGrid horizontal={false} />
 				<XAxis type="number" hide />
 				<YAxis
 					type="category"

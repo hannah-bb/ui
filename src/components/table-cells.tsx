@@ -13,6 +13,7 @@ import type * as React from "react";
 import { Badge } from "@/components/badge";
 import { Button } from "@/components/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/tooltip";
+import { type DateValue, parseDate } from "@/lib/format";
 
 /**
  * Cell renderers for `DataTable` and `Table`.
@@ -158,6 +159,34 @@ const tagColorValues = [
 	"var(--label-color-5)",
 	"var(--label-color-6)",
 ] as const;
+
+/**
+ * The tag colour for the `index`-th category, as a CSS value: the palette in
+ * order, starting over after the sixth. For chart marks coloured by position.
+ */
+function tagColorAt(index: number): string {
+	const length = tagColorValues.length;
+	return tagColorValues[((index % length) + length) % length] as string;
+}
+
+/**
+ * A tag colour per category, assigned in the order the keys come: the first
+ * key gets `label-1`, the second `label-2`, and so on, starting over after the
+ * sixth. A repeated key keeps the colour of its first appearance.
+ *
+ * Sort the keys first by what should decide the colours (a stable name, the
+ * volume each category owns), and derive the map once for every chart that
+ * shows the same categories, so a category keeps one colour across them. As
+ * the colours follow the order rather than a fixed name map, a category the
+ * data adds later still gets one.
+ */
+function assignTagColors(keys: Iterable<string>): Map<string, string> {
+	const colors = new Map<string, string>();
+	for (const key of keys) {
+		if (!colors.has(key)) colors.set(key, tagColorAt(colors.size));
+	}
+	return colors;
+}
 
 /**
  * A single tag.
@@ -362,23 +391,14 @@ function EmptyCell() {
 	return <span className="fui:text-muted-foreground">—</span>;
 }
 
-type DateTimeValue = Date | string | number | null | undefined;
+type DateTimeValue = DateValue;
 
 /**
- * Parses a cell's date, or returns `null` for a value that means "not set":
- * `null`, `undefined`, `""`, `0` (the Unix epoch), an unparseable string, and
- * the zero time some backends send for "never" (`0001-01-01`, Go's
- * `time.Time{}`).
+ * Parses a cell's date, or returns `null` for a value that means "not set".
+ * The same as `parseDate` from `@foomo/ui/lib/format`, which the text
+ * formatters use, kept under this name for existing imports.
  */
-function parseCellDate(value: DateTimeValue): Date | null {
-	if (value === null || value === undefined || value === "" || value === 0) {
-		return null;
-	}
-	const date = value instanceof Date ? value : new Date(value);
-	const time = date.getTime();
-	if (Number.isNaN(time) || date.getUTCFullYear() <= 1) return null;
-	return date;
-}
+const parseCellDate = parseDate;
 
 /**
  * A date and time, the day in the regular foreground and the time muted, so a
@@ -613,6 +633,7 @@ function ThumbnailCell({
 }
 
 export {
+	assignTagColors,
 	BooleanCell,
 	cellLinkClassName,
 	DateTimeCell,
@@ -627,6 +648,7 @@ export {
 	TagCell,
 	type TagColor,
 	TagListCell,
+	tagColorAt,
 	tagColorValues,
 	ThumbnailCell,
 	TruncateCell,

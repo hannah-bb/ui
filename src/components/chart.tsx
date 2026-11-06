@@ -83,7 +83,7 @@ function ChartContainer({
 				data-aspect={aspect}
 				className={cn(
 					chartAspectClassNames[aspect],
-					"fui:flex fui:justify-center fui:text-xs fui:[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground fui:[&_.recharts-cartesian-grid_line[stroke=#ccc]]:stroke-border/50 fui:[&_.recharts-curve.recharts-tooltip-cursor]:stroke-border fui:[&_.recharts-dot[stroke=#fff]]:stroke-transparent fui:[&_.recharts-layer]:outline-hidden fui:[&_.recharts-polar-grid_[stroke=#ccc]]:stroke-border fui:[&_.recharts-radial-bar-background-sector]:fill-muted fui:[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted fui:[&_.recharts-reference-line_[stroke=#ccc]]:stroke-border fui:[&_.recharts-sector]:outline-hidden fui:[&_.recharts-sector[stroke=#fff]]:stroke-transparent fui:[&_.recharts-surface]:outline-hidden",
+					"fui:flex fui:justify-center fui:text-xs fui:[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground fui:[&_.recharts-cartesian-grid_line[stroke=#ccc]]:stroke-borderfui:[&_.recharts-curve.recharts-tooltip-cursor]:stroke-border fui:[&_.recharts-dot[stroke=#fff]]:stroke-transparent fui:[&_.recharts-layer]:outline-hidden fui:[&_.recharts-polar-grid_[stroke=#ccc]]:stroke-border fui:[&_.recharts-radial-bar-background-sector]:fill-muted fui:[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted fui:[&_.recharts-reference-line_[stroke=#ccc]]:stroke-border fui:[&_.recharts-sector]:outline-hidden fui:[&_.recharts-sector[stroke=#fff]]:stroke-transparent fui:[&_.recharts-surface]:outline-hidden",
 					className,
 				)}
 				{...props}
